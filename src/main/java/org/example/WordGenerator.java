@@ -10,8 +10,8 @@ public class WordGenerator {
         List<String> result = handler.parseJsonFile(filename);
 
         Random rnd = new Random();
-        int UB = result.toArray().length;
+        int upperBound = result.toArray().length;
 
-        return result.get(rnd.nextInt(UB));
+        return result.get(rnd.nextInt(upperBound));
     }
 }
