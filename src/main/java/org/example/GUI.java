@@ -4,6 +4,7 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -14,6 +15,7 @@ public class GUI {
     private JTextField inputField;
     private JButton button;
 
+    private HashMap<Character, Integer> charOccurrenceMap;
     private int currentRow = 0;
     // target not final since we have multiple games
     private String target = WordGenerator.getWordFromFile("wordles.json");
@@ -54,6 +56,9 @@ public class GUI {
         inputPanel.add(inputField);
         inputPanel.add(button);
         frame.add(inputPanel, BorderLayout.SOUTH);
+
+        // initialise charOccurences
+        getCharOccurences();
 
         // adding button logic
          button.addActionListener(new ActionListener() {
@@ -98,7 +103,15 @@ public class GUI {
             if (letter == target.charAt(i)) {
                 grid[currentRow][i].setBackground(Color.GREEN);
             } else if (target.contains("" + letter)) {
-                grid[currentRow][i].setBackground(Color.ORANGE);
+                if (charOccurrenceMap.get(letter) > 0){
+                    grid[currentRow][i].setBackground(Color.ORANGE);
+                    charOccurrenceMap.replace(letter, charOccurrenceMap.get(letter) - 1);
+                }
+                else{
+                    grid[currentRow][i].setBackground(Color.GRAY);
+                    grid[currentRow][i].setForeground(Color.WHITE);
+                }
+
             } else {
                 grid[currentRow][i].setBackground(Color.GRAY);
                 grid[currentRow][i].setForeground(Color.WHITE);
@@ -118,6 +131,20 @@ public class GUI {
                 grid[row][col].setText("");
                 grid[row][col].setBackground(Color.WHITE);
                 grid[row][col].setForeground(Color.BLACK);
+            }
+        }
+    }
+
+    private void getCharOccurences(){
+        this.charOccurrenceMap = new HashMap<>();
+        char[] guessArr = this.target.toCharArray();
+
+        for (char c: guessArr){
+            if (charOccurrenceMap.containsKey(c)){
+                charOccurrenceMap.replace(c, charOccurrenceMap.get(c) + 1);
+            }
+            else{
+                charOccurrenceMap.put(c, 1);
             }
         }
     }
