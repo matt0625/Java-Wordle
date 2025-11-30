@@ -36,20 +36,3 @@ public class GuessChecker {
 
     }
 
-    /*
-    public static void validateCharPositions(String guess, String target){
-        // should be ok to hardcode here since we've established if the code gets here the guess is of length 5?
-        for (int j = 0; j < 5; j++){
-            if (guess.charAt(j) == target.charAt(j)){
-                System.out.print(ANSI_GREEN + guess.charAt(j) + ANSI_RESET);
-            }
-            else if (target.contains(""+guess.charAt(j))){
-                System.out.print(ANSI_YELLOW + guess.charAt(j) + ANSI_RESET);
-            }
-            else{
-                System.out.print(guess.charAt(j));
-            }
-        }
-        System.out.println();
-    }
-     */

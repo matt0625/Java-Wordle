@@ -15,117 +15,64 @@ public class GUI {
     private JTextField inputField;
     private JButton button;
 
-    private HashMap<Character, Integer> charOccurrenceMap;
+    private WordleGame game;
     private int currentRow = 0;
-    // target not final since we have multiple games
-    private String target = WordGenerator.getWordFromFile("wordles.json");
-    private String[] guesses = new String[6];
-    private List<String> validWords = Stream.concat(JSONhandler.parseJsonFile("nonwordles.json").stream(), JSONhandler.parseJsonFile("wordles.json").stream()).toList();
+    private String[] guesses;
+
+    private List<String> validWords;
 
     public GUI(){
-        // frame setup i.e. setting up the window
+
+        validWords = Stream.concat(JSONhandler.parseJsonFile("nonwordles.json").stream(), JSONhandler.parseJsonFile("wordles.json").stream()).toList();
+
+        setupUI();
+        startNewGame();
+    }
+
+    private void setupUI(){
         frame = new JFrame("Java Wordle");
         frame.setSize(400, 600);
         frame.setLayout(new BorderLayout());
 
-        // creating the grid panel
         JPanel gridPanel = new JPanel();
-        gridPanel.setLayout(new GridLayout(6, 5, 5, 5)); // 6 rows, 5 cols, gap of 5x5 pixels
+        gridPanel.setLayout(new GridLayout(6, 5, 5, 5));
         grid = new JLabel[6][5];
 
-        // initalise boxes
-        for (int row = 0; row < 6; row++){
-            for (int col = 0; col < 5; col++){
+        for (int row = 0; row < 6; row++) {
+            for (int col = 0; col < 5; col++) {
                 JLabel label = new JLabel("", SwingConstants.CENTER);
-                label.setBorder(BorderFactory.createLineBorder((Color.BLACK)));
+                label.setBorder(BorderFactory.createLineBorder(Color.BLACK));
                 label.setFont(new Font("Arial", Font.BOLD, 24));
-                label.setOpaque(true); // Required to show background color
+                label.setOpaque(true);
                 label.setBackground(Color.WHITE);
-
                 grid[row][col] = label;
-                gridPanel.add(label); // add to visual panel
+                gridPanel.add(label);
             }
         }
         frame.add(gridPanel, BorderLayout.CENTER);
 
-        // create input panel
         JPanel inputPanel = new JPanel();
         inputField = new JTextField(10);
         button = new JButton("Guess");
-
         inputPanel.add(inputField);
         inputPanel.add(button);
         frame.add(inputPanel, BorderLayout.SOUTH);
 
-        // initialise charOccurences
-        getCharOccurences();
-
-        // adding button logic
-         button.addActionListener(new ActionListener() {
-             @Override
-             public void actionPerformed(ActionEvent e) {
-                 String guess = inputField.getText().toLowerCase();
-                 boolean isSafe = GuessChecker.isValidInput(validWords, guesses, guess, frame);
-
-                 if (!isSafe){
-                     return;
-                 }
-                 processGuess(guess);
-                 guesses[currentRow] = guess;
-
-                 if (guess.equals(target)){
-                     JOptionPane.showMessageDialog(frame, "Congratulations! You Won!");
-                     resetGame();
-                     return;
-                 }
-
-                 // prepare for next turn
-                 inputField.setText("");
-                 currentRow++;
-
-                 if (currentRow >= 6){
-
-                     JOptionPane.showMessageDialog(frame, "Game Over! Word was " + target);
-                     inputField.setEnabled(false);
-                     button.setEnabled(false);
-                 }
-             }
-         });
-         frame.setVisible(true);
+        button.addActionListener(e -> handleGuess());
+        frame.setVisible(true);
     }
 
-    private void processGuess(String guess) {
-        for (int i = 0; i < 5; i++) {
-            char letter = guess.charAt(i);
-
-            grid[currentRow][i].setText("" + letter);
-
-            if (letter == target.charAt(i)) {
-                grid[currentRow][i].setBackground(Color.GREEN);
-            } else if (target.contains("" + letter)) {
-                if (charOccurrenceMap.get(letter) > 0){
-                    grid[currentRow][i].setBackground(Color.ORANGE);
-                    charOccurrenceMap.replace(letter, charOccurrenceMap.get(letter) - 1);
-                }
-                else{
-                    grid[currentRow][i].setBackground(Color.GRAY);
-                    grid[currentRow][i].setForeground(Color.WHITE);
-                }
-
-            } else {
-                grid[currentRow][i].setBackground(Color.GRAY);
-                grid[currentRow][i].setForeground(Color.WHITE);
-            }
-        }
-    }
-
-    private void resetGame(){
+    private void startNewGame(){
+        String target = WordGenerator.getWordFromFile("wordles.json");
+        game = new WordleGame(target, 6);
         currentRow = 0;
         guesses = new String[6];
+        resetGrid();
+        inputField.setEnabled(true);
+        button.setEnabled(true);
+    }
 
-        target = WordGenerator.getWordFromFile("wordles.json");
-
-
+    private void resetGrid(){
         for (int row = 0; row < 6; row++) {
             for (int col = 0; col < 5; col++) {
                 grid[row][col].setText("");
@@ -135,16 +82,41 @@ public class GUI {
         }
     }
 
-    private void getCharOccurences(){
-        this.charOccurrenceMap = new HashMap<>();
-        char[] guessArr = this.target.toCharArray();
+    private void handleGuess(){
+        String guess = inputField.getText();
 
-        for (char c: guessArr){
-            if (charOccurrenceMap.containsKey(c)){
-                charOccurrenceMap.replace(c, charOccurrenceMap.get(c) + 1);
-            }
-            else{
-                charOccurrenceMap.put(c, 1);
+        boolean isSafe = GuessChecker.isValidInput(validWords, guesses, guess, frame); // Adapted to your checker
+        if (!isSafe) return;
+
+        LetterResult[] results = game.makeGuess(guess);
+
+        updateGrid(guess, results);
+
+        guesses[currentRow] = guess;
+
+        if (game.isWon()) {
+            JOptionPane.showMessageDialog(frame, "Congratulations! You Won!");
+            startNewGame();
+        } else if (game.isGameOver()) {
+            JOptionPane.showMessageDialog(frame, "Game Over! Word was " + game.getTarget());
+            inputField.setEnabled(false);
+            button.setEnabled(false);
+        } else {
+            currentRow++;
+            inputField.setText("");
+        }
+    }
+
+    private void updateGrid(String guess, LetterResult[] results){
+        for (int i = 0; i < 5; i++) {
+            JLabel label = grid[currentRow][i];
+            label.setText(String.valueOf(guess.charAt(i)).toUpperCase());
+            label.setForeground(Color.WHITE);
+
+            switch (results[i]) {
+                case CORRECT -> label.setBackground(Color.GREEN);
+                case WRONG_POS -> label.setBackground(Color.ORANGE);
+                case NOT_IN_WORD -> label.setBackground(Color.GRAY);
             }
         }
     }
