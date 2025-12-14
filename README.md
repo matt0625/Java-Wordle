@@ -38,7 +38,7 @@ A major focus of this project was the application of rigorous software engineeri
 
 * **Vanilla Gameplay:** Standard Wordle rules including input validation and color-coded feedback.
 * **Intelligent Hint System:** A "Get Hint" button that invokes the entropy engine to recommend the most informative next guess.
-* **Optimized Startup:** The solver uses a hardcoded optimal first move ("SALET") to provide an instantaneous first hint, skipping the initial heavy calculation while still being mathematically sound.
+* **Optimized Startup:** The solver uses a hardcoded optimal first move ("CRANE") to provide an instantaneous first hint, skipping the initial heavy calculation while still being mathematically sound.
 * **Robust Duplicate Logic:** Accurate handling of complex letter-matching scenarios (e.g., when a guess contains more instances of a letter than the target word).
 
 ## How to Run
