@@ -58,4 +58,3 @@ A major focus of this project was the application of rigorous software engineeri
     java -cp bin org.example.GUI
     ```
 
-*Note: If you are contributing to this project and encounter a "rejected push" error, it is likely because the remote contains work you do not have locally. Use `git pull --rebase` to synchronize before pushing your changes.*
