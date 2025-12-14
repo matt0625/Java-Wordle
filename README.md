@@ -40,21 +40,3 @@ A major focus of this project was the application of rigorous software engineeri
 * **Intelligent Hint System:** A "Get Hint" button that invokes the entropy engine to recommend the most informative next guess.
 * **Optimized Startup:** The solver uses a hardcoded optimal first move ("CRANE") to provide an instantaneous first hint, skipping the initial heavy calculation while still being mathematically sound.
 * **Robust Duplicate Logic:** Accurate handling of complex letter-matching scenarios (e.g., when a guess contains more instances of a letter than the target word).
-
-## How to Run
-
-### Prerequisites
-* Java Development Kit (JDK) 17 or higher.
-* `wordles.json` and `nonwordles.json` files must be present in the project root directory.
-
-### Build and Run
-1.  Clone the repository.
-2.  Compile the source files:
-    ```bash
-    javac -d bin src/org/example/*.java
-    ```
-3.  Launch the application:
-    ```bash
-    java -cp bin org.example.GUI
-    ```
-
