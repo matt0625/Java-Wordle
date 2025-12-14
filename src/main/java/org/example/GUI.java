@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 
@@ -14,8 +15,10 @@ public class GUI {
     private JLabel[][] grid;
     private JTextField inputField;
     private JButton button;
+    private JButton hintButton;
 
     private WordleGame game;
+    private WordleSolver solver;
     private int currentRow = 0;
     private String[] guesses;
 
@@ -25,11 +28,11 @@ public class GUI {
 
         validWords = Stream.concat(JSONhandler.parseJsonFile("nonwordles.json").stream(), JSONhandler.parseJsonFile("wordles.json").stream()).toList();
 
-        setupUI();
+        setupGameGrid();
         startNewGame();
     }
 
-    private void setupUI(){
+    private void setupGameGrid(){
         frame = new JFrame("Java Wordle");
         frame.setSize(400, 600);
         frame.setLayout(new BorderLayout());
@@ -54,17 +57,21 @@ public class GUI {
         JPanel inputPanel = new JPanel();
         inputField = new JTextField(10);
         button = new JButton("Guess");
+        hintButton = new JButton("Get Hint");
         inputPanel.add(inputField);
         inputPanel.add(button);
+        inputPanel.add(hintButton);
         frame.add(inputPanel, BorderLayout.SOUTH);
 
         button.addActionListener(e -> handleGuess());
+        hintButton.addActionListener(e -> handleHint());
         frame.setVisible(true);
     }
 
     private void startNewGame(){
         String target = WordGenerator.getWordFromFile("wordles.json");
         game = new WordleGame(target, 6);
+        solver = new WordleSolver();
         currentRow = 0;
         guesses = new String[6];
         resetGrid();
@@ -80,15 +87,20 @@ public class GUI {
                 grid[row][col].setForeground(Color.BLACK);
             }
         }
+        inputField.setText("");
     }
 
     private void handleGuess(){
         String guess = inputField.getText();
+        solver.recordGuess(guess);
 
-        boolean isSafe = GuessChecker.isValidInput(validWords, guesses, guess, frame); // Adapted to your checker
+        boolean isSafe = GuessChecker.isValidInput(validWords, guesses, guess, frame);
         if (!isSafe) return;
 
         LetterResult[] results = game.makeGuess(guess);
+
+        // solver working in the background with each guess
+        solver.filterWords(results, guess);
 
         updateGrid(guess, results);
 
@@ -105,6 +117,39 @@ public class GUI {
             currentRow++;
             inputField.setText("");
         }
+    }
+
+    private void handleHint(){
+        // prevent multiple clicks during calculation
+        hintButton.setEnabled(false);
+        hintButton.setText("Thinking...");
+
+        SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                return solver.getBestWord();
+            }
+
+            // run when background process complete
+            @Override
+            protected void done(){
+                try{
+                    String bestMove = get();
+                    JOptionPane.showMessageDialog(frame, "The best move is: " + bestMove.toUpperCase());
+                }
+                catch (InterruptedException | ExecutionException e){
+                    JOptionPane.showMessageDialog(frame, "Error calculating hint");
+                }
+                finally{
+                    // always want to make the button available again
+                    hintButton.setText("Get Hint");
+                    hintButton.setEnabled(true);
+                }
+            }
+        };
+
+        // start background thread
+        worker.execute();
     }
 
     private void updateGrid(String guess, LetterResult[] results){
